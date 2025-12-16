@@ -2,3 +2,4 @@
 /templates/markdowns
 /.idea
 .env
+/templates/pages/index.gohtml

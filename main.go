@@ -81,12 +81,16 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 			panic(err)
 		}
 
+		var pages []string
+
 		for _, file := range files {
 			if file.IsDir() {
 				continue
 			}
 
 			cleanedTitle := file.Name()[:len(file.Name())-3]
+			pages = append(pages, cleanedTitle)
+
 			newPath := filepath.Join("templates/generated/", cleanedTitle+".gohtml")
 
 			md, err := os.ReadFile(filepath.Join(root, file.Name()))
@@ -117,6 +121,8 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 				c.HTML(http.StatusOK, cleanedTitle, gin.H{})
 			})
 		}
+		updateIndexPage(pages)
+
 		fmt.Println("Processing files done")
 
 		if os.Getenv("ENVIRONMENT") == "prod" {
@@ -126,6 +132,21 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 		}
 
 		cloneRepository()
+	}
+}
+func updateIndexPage(pages []string) {
+	pagesAsList := "<ul>"
+
+	for _, page := range pages {
+		pagesAsList += "<li><a href=\"/" + page + "\">" + page + "</a></li>"
+	}
+
+	pagesAsList += "</ul>"
+
+	goHtml := getGoHtmlContent(pagesAsList, "index")
+
+	if err := os.WriteFile("templates/pages/index.gohtml", []byte(goHtml), 0666); err != nil {
+		log.Fatal(err)
 	}
 }
 
