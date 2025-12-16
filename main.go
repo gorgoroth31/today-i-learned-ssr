@@ -57,16 +57,7 @@ func resetFiles() {
 		panic(err)
 	}
 
-	err = os.RemoveAll("./templates/markdowns")
-
-	_, err = git.PlainClone("./templates/markdowns", &git.CloneOptions{
-		URL:      "https://github.com/gorgoroth31/today-i-learned",
-		Progress: os.Stdout,
-	})
-
-	if err != nil {
-		panic(err)
-	}
+	cloneRepository()
 }
 
 func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
@@ -82,12 +73,12 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 		}
 
 		for _, file := range files {
-			cleanedTitle := file.Name()[:len(file.Name())-3]
-			newPath := filepath.Join("templates/generated/", cleanedTitle+".gohtml")
-
-			if _, err := os.Stat(newPath); err == nil {
+			if file.IsDir() {
 				continue
 			}
+
+			cleanedTitle := file.Name()[:len(file.Name())-3]
+			newPath := filepath.Join("templates/generated/", cleanedTitle+".gohtml")
 
 			md, err := os.ReadFile(filepath.Join(root, file.Name()))
 			if err != nil {
@@ -98,8 +89,18 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 
 			htmlTemplate := getGoHtmlContent(string(newHtml), cleanedTitle)
 
+			fileAlreadyExists := false
+
+			if _, err := os.Stat(newPath); err == nil {
+				fileAlreadyExists = true
+			}
+
 			if err := os.WriteFile(newPath, []byte(htmlTemplate), 0666); err != nil {
 				log.Fatal(err)
+			}
+
+			if fileAlreadyExists {
+				continue
 			}
 
 			r.AddFromFiles(cleanedTitle, "templates/base.gohtml", newPath)
@@ -107,8 +108,11 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 				c.HTML(http.StatusOK, cleanedTitle, gin.H{})
 			})
 		}
+		fmt.Println("Processing files done")
 
-		time.Sleep(time.Second * 60)
+		time.Sleep(time.Second * 10)
+
+		cloneRepository()
 	}
 }
 
@@ -133,4 +137,17 @@ func getGoHtmlContent(htmlTemplate string, title string) string {
 ` + htmlTemplate + `
 {{ end }}
 `
+}
+
+func cloneRepository() {
+	err := os.RemoveAll("./templates/markdowns")
+
+	_, err = git.PlainClone("./templates/markdowns", &git.CloneOptions{
+		URL:      "https://github.com/gorgoroth31/today-i-learned",
+		Progress: os.Stdout,
+	})
+
+	if err != nil {
+		panic(err)
+	}
 }
