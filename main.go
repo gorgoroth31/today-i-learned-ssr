@@ -27,6 +27,7 @@ func main() {
 	resetFiles()
 
 	r := gin.Default()
+	r.Static("/static", "./static")
 	r.HTMLRender = configureHtmlRender(r)
 
 	err = r.Run(":8080")
@@ -37,6 +38,7 @@ func main() {
 
 func configureHtmlRender(engine *gin.Engine) multitemplate.Renderer {
 	r := multitemplate.NewRenderer()
+
 	r.AddFromFiles("index", "templates/base.gohtml", "templates/pages/index.gohtml")
 	engine.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index", gin.H{})
