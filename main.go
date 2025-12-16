@@ -14,15 +14,22 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+
+	if err != nil {
+		panic(err)
+	}
+
 	resetFiles()
 
 	r := gin.Default()
 	r.HTMLRender = configureHtmlRender(r)
 
-	err := r.Run(":8080")
+	err = r.Run(":8080")
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +117,11 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 		}
 		fmt.Println("Processing files done")
 
-		time.Sleep(time.Second * 10)
+		if os.Getenv("ENVIRONMENT") == "prod" {
+			time.Sleep(time.Hour * 3)
+		} else {
+			time.Sleep(time.Second * 10)
+		}
 
 		cloneRepository()
 	}
@@ -143,7 +154,7 @@ func cloneRepository() {
 	err := os.RemoveAll("./templates/markdowns")
 
 	_, err = git.PlainClone("./templates/markdowns", &git.CloneOptions{
-		URL:      "https://github.com/gorgoroth31/today-i-learned",
+		URL:      os.Getenv("GITHUB_URL"),
 		Progress: os.Stdout,
 	})
 

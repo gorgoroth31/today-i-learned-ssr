@@ -1,3 +1,4 @@
 /templates/generated
 /templates/markdowns
 /.idea
+.env
