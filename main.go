@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-contrib/multitemplate"
@@ -66,12 +67,15 @@ func resetFiles() {
 		panic(err)
 	}
 
-	cloneRepository()
+	if err := os.WriteFile("templates/pages/index.gohtml", []byte(""), 0666); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 	for {
 		fmt.Println("Processing files...")
+		cloneRepository()
 
 		root := "./templates/markdowns"
 
@@ -125,15 +129,27 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 
 		fmt.Println("Processing files done")
 
-		if os.Getenv("ENVIRONMENT") == "prod" {
-			time.Sleep(time.Hour * 3)
-		} else {
-			time.Sleep(time.Second * 10)
-		}
+		refreshTime := getRefreshTimeFromEnvironment()
 
-		cloneRepository()
+		fmt.Printf("Refresh in %d seconds\n", refreshTime)
+
+		time.Sleep(time.Second * time.Duration(refreshTime))
+
 	}
 }
+
+func getRefreshTimeFromEnvironment() int {
+	variable := os.Getenv("REFRESH_TIME")
+
+	i, err := strconv.Atoi(variable)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return i
+}
+
 func updateIndexPage(pages []string) {
 	pagesAsList := "<ul>"
 
