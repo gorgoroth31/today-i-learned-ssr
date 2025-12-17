@@ -102,6 +102,10 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 				log.Fatal(err)
 			}
 
+			linkToStartpage := []byte("<a href=\"/\">Overview</a>")
+
+			md = append(linkToStartpage, md...)
+
 			newHtml := mdToHTML(md)
 
 			htmlTemplate := getGoHtmlContent(string(newHtml), cleanedTitle)
