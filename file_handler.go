@@ -50,7 +50,7 @@ func startMarkdownLoop(r multitemplate.Renderer, engine *gin.Engine, stop chan s
 		select {
 		case <-stop:
 			fmt.Println("stopping")
-			return
+			break
 		default:
 		}
 		fmt.Println("Processing files...")
