@@ -45,7 +45,7 @@ func updateIndexPage(pages []string) {
 	}
 }
 
-func startMarkdownLoop(r multitemplate.Renderer, engine *gin.Engine, stop chan struct{}) {
+func startUpdateLoop(r multitemplate.Renderer, engine *gin.Engine, stop chan struct{}) {
 	for {
 		select {
 		case <-stop:

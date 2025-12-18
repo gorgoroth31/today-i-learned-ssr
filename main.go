@@ -21,7 +21,7 @@ func main() {
 	renderer := configureHtmlRender(r)
 	r.HTMLRender = renderer
 
-	go startMarkdownLoop(renderer, r, stop)
+	go startUpdateLoop(renderer, r, stop)
 
 	err := r.Run(":8080")
 	if err != nil {
