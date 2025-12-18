@@ -34,10 +34,17 @@ func main() {
 	r.HTMLRender = renderer
 
 	stop := make(chan struct{})
+	cleanupDone := make(chan struct{})
 
-	go setupFileCleanerAtExit(stop)
+	go setupFileCleanerAtExit(stop, cleanupDone)
 
 	go handleMarkdownFiles(renderer, r, stop)
+
+	go func() {
+		<-cleanupDone
+		fmt.Println("Exiting...")
+		os.Exit(0)
+	}()
 
 	err = r.Run(":8080")
 	if err != nil {
@@ -217,9 +224,8 @@ func cloneRepository() {
 	}
 }
 
-func setupFileCleanerAtExit(stop chan struct{}) {
+func setupFileCleanerAtExit(stop chan struct{}, cleanupDone chan struct{}) {
 	signalChan := make(chan os.Signal, 1)
-	cleanupDone := make(chan struct{})
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		<-signalChan
@@ -234,7 +240,5 @@ func setupFileCleanerAtExit(stop chan struct{}) {
 
 		fmt.Println("Files are deleted and process will finish")
 		close(cleanupDone)
-		os.Exit(0)
 	}()
-	<-cleanupDone
 }
