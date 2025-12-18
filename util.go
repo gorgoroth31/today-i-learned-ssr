@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -30,4 +31,15 @@ func getRefreshTimeFromEnvironment() int {
 	}
 
 	return i
+}
+
+func getPortFromEnvironment() string {
+	variable := os.Getenv("PORT")
+
+	if variable == "" {
+		fmt.Println("empty")
+		return ":8080"
+	}
+
+	return variable
 }

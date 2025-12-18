@@ -23,7 +23,7 @@ func main() {
 
 	go startUpdateLoop(renderer, r, stop)
 
-	err := r.Run(":8080")
+	err := r.Run(getPortFromEnvironment())
 	if err != nil {
 		panic(err)
 	}
