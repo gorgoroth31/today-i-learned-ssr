@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -29,7 +30,14 @@ func main() {
 
 	r := gin.Default()
 	r.Static("/static", "./static")
-	r.HTMLRender = configureHtmlRender(r)
+	renderer := configureHtmlRender(r)
+	r.HTMLRender = renderer
+
+	stop := make(chan struct{})
+
+	go setupFileCleanerAtExit(stop)
+
+	go handleMarkdownFiles(renderer, r, stop)
 
 	err = r.Run(":8080")
 	if err != nil {
@@ -48,8 +56,6 @@ func configureHtmlRender(engine *gin.Engine) multitemplate.Renderer {
 	engine.GET("/about", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "about", gin.H{})
 	})
-
-	go handleMarkdownFiles(r, engine)
 
 	return r
 }
@@ -72,8 +78,14 @@ func resetFiles() {
 	}
 }
 
-func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
+func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine, stop chan struct{}) {
 	for {
+		select {
+		case <-stop:
+			fmt.Println("stopping")
+			return
+		default:
+		}
 		fmt.Println("Processing files...")
 		cloneRepository()
 
@@ -138,7 +150,6 @@ func handleMarkdownFiles(r multitemplate.Renderer, engine *gin.Engine) {
 		fmt.Printf("Refresh in %d seconds\n", refreshTime)
 
 		time.Sleep(time.Second * time.Duration(refreshTime))
-
 	}
 }
 
@@ -204,4 +215,26 @@ func cloneRepository() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func setupFileCleanerAtExit(stop chan struct{}) {
+	signalChan := make(chan os.Signal, 1)
+	cleanupDone := make(chan struct{})
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		<-signalChan
+		close(stop)
+		fmt.Println("\nReceived an interrupt, deleting generated files...\n")
+		err := os.RemoveAll("./templates/generated")
+		if err != nil {
+			panic(err)
+		}
+
+		err = os.Remove("./templates/pages/index.gohtml")
+
+		fmt.Println("Files are deleted and process will finish")
+		close(cleanupDone)
+		os.Exit(0)
+	}()
+	<-cleanupDone
 }
